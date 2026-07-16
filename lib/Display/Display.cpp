@@ -1,5 +1,7 @@
 #include "Display.h"
-#include "config.h"
+
+
+
 
 // Konstruktori - inicializon vlerat
 Display::Display() {
@@ -99,6 +101,29 @@ void Display::showCustomChar(uint8_t index, const uint8_t* bitmap) {
   
   // Shtimi i një karakteri të personalizuar në bibliotekë[citation:9]
   matrix->addChar(index, bitmap);
+}
+
+// Shfaq motin dhe temperaturën
+void Display::showWeather(String condition, float temp) {
+  if (matrix == nullptr) return;
+
+  String text = condition + " " + String(temp, 1) + "C";
+  showScrollingText(text, 60, 1500);
+}
+
+// Shfaq vetëm temperaturën
+void Display::showTemperature(float temp) {
+  if (matrix == nullptr) return;
+
+  String text = "TEMP " + String(temp, 1) + "C";
+  showText(text);
+}
+
+// Shfaq orën
+void Display::showClock(String time) {
+  if (matrix == nullptr) return;
+
+  showText(time, PA_PRINT, PA_NO_EFFECT);
 }
 
 // Shënim: Funksioni displayAnimate() duhet të thirret në loop-in kryesor
