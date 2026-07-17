@@ -6,9 +6,9 @@ const char* WIFI_SSID = "Mane";
 const char* WIFI_PASSWORD = "77777778";
 
 // ==================== MAX7219 - 8x32 Matrix ====================
-#define MAX_DIN  23
-#define MAX_CS   5
-#define MAX_CLK  18
+#define MAX_DIN  7
+#define MAX_CS   6
+#define MAX_CLK  4
 #define MAX_DEVICES 4
 
 // ==================== BMP280 (I2C) ====================
@@ -24,7 +24,7 @@ const char* WIFI_PASSWORD = "77777778";
 #define LDR_PIN 34
 
 // ==================== PIR ====================
-#define PIR_PIN 15
+#define PIR_PIN 5
 
 // ==================== NTP ====================
 const char* NTP_SERVER = "pool.ntp.org";
