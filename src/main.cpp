@@ -1,10 +1,12 @@
 #include <Arduino.h>
+#include <Adafruit_BMP280.h>  // Së pari biblioteka
 #include "config.h"
 #include <WiFi.h>
 #include <time.h>
 #include "Display.h"
 #include "Sensors.h"
 #include "RTC.h"
+
 
 // Objektet globale
 Display display;

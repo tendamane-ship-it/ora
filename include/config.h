@@ -21,7 +21,7 @@ const char* WIFI_PASSWORD = "77777778";
 #define MY_RTC_SCL 9   // <--- Emër unik
 
 // ==================== LDR ====================
-#define LDR_PIN 34
+//#define LDR_PIN 34
 
 // ==================== PIR ====================
 #define PIR_PIN 5
