@@ -6,6 +6,7 @@
 #include "Display.h"
 #include "Sensors.h"
 #include "RTC.h"
+#include "WiFiService.h"
 
 
 // Objektet globale
@@ -30,6 +31,7 @@ void setup() {
   Serial.begin(115200);
   delay(2000);
   Serial.println("\n=== ORA SMART - ESP32-S3 ===\n");
+  initWiFiManager();
 
   // 1. Inicializimi i Ekranit
   display.init();
