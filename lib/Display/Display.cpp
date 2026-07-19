@@ -24,13 +24,11 @@ void Display::init() {
     MAX_DEVICES
   );
 
-
   matrix->begin();
 
   matrix->setIntensity(intensity);
 
   matrix->displayClear();
-  
 
   matrix->setTextAlignment(PA_CENTER);
 

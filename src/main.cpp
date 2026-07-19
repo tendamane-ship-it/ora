@@ -24,7 +24,8 @@ unsigned long lastPIRCheck = 0;
 // Gjendje
 bool pirState = false;
 bool displayOn = true;
-
+unsigned long lastPageChange = 0;
+uint8_t displayPage = 0;
 
 // Prototipe
 void updateDisplay();
@@ -116,7 +117,7 @@ void setup() {
       DAYLIGHT_OFFSET_SEC,
       NTP_SERVER
     );
-
+   
 
     Serial.println("Duke pritur NTP...");
 
@@ -136,10 +137,15 @@ void setup() {
 
     Serial.println();
 
+rtc.syncFromNTP(now);
 
-    rtc.syncFromNTP(now);
+Serial.println("✅ RTC u sinkronizua me NTP!");
 
-    Serial.println("✅ RTC u sinkronizua me NTP!");
+Serial.print("Koha NTP: ");
+Serial.println(ctime(&now));
+
+Serial.print("Koha RTC: ");
+Serial.println(rtc.getTimeString());
 
   }
 
@@ -267,22 +273,30 @@ void loop() {
 
 void updateDisplay() {
 
-
-  float temp = sensors.getTemperature();
-
-  float press = sensors.getPressure();
+  String text;
 
 
-  String text =
-    String(temp,1) +
-    "C  " +
-    String(press,0) +
-    "hPa";
+  switch (displayPage) {
+
+    case 0:
+      text = rtc.getTimeString();
+      break;
+
+
+    case 1:
+      text = String(sensors.getTemperature(), 1) + "C";
+      break;
+
+
+    case 2:
+      text = String(sensors.getPressure(), 0) + "hPa";
+      break;
+
+  }
 
 
   Serial.print("Display: ");
   Serial.println(text);
-
 
 
   display.showScrollingText(
@@ -290,6 +304,13 @@ void updateDisplay() {
     60,
     1000
   );
+
+
+  displayPage++;
+
+  if (displayPage > 2) {
+    displayPage = 0;
+  }
 
 }
 

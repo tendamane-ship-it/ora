@@ -41,7 +41,7 @@ String OraRTC::getTimeString() {
   if (rtcPresent) {
     DateTime now = rtcModule.now();
     char buffer[9];
-    sprintf(buffer, "%02d:%02d:%02d", now.hour(), now.minute(), now.second());
+    sprintf(buffer, "%02d:%02d", now.hour(), now.minute());
     return String(buffer);
   }
   return "--:--:--";

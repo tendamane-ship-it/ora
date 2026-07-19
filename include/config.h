@@ -28,5 +28,4 @@ extern const char* WIFI_PASSWORD;
 extern const char* NTP_SERVER;
 extern const long GMT_OFFSET_SEC;
 extern const int DAYLIGHT_OFFSET_SEC;
-
 #endif
