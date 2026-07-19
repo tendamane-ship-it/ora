@@ -2,194 +2,368 @@
 #include "config.h"
 #include <WiFi.h>
 #include <time.h>
+
 #include "Display.h"
 #include "Sensors.h"
 #include "RTC.h"
+
 
 // Objektet globale
 Display display;
 Sensors sensors;
 OraRTC rtc;
 
-// Variablat e kohës
+
+// Kohëmatës
 unsigned long lastSensorRead = 0;
 unsigned long lastDisplayUpdate = 0;
 unsigned long lastRTCSync = 0;
 unsigned long lastPIRCheck = 0;
+
+
+// Gjendje
 bool pirState = false;
 bool displayOn = true;
 
-// Prototipet e funksioneve
+
+// Prototipe
 void updateDisplay();
 void checkPIR();
 String getGreeting(int hour);
 
+
+
 void setup() {
+
   Serial.begin(115200);
   delay(2000);
+
   Serial.println("\n=== ORA SMART - ESP32-S3 ===\n");
   Serial.println("START OK");
 
-  // 1. Inicializimi i Ekranit
+
+  // ================= DISPLAY =================
+
   Serial.println("Before Display");
 
+  display.init();
 
-Serial.println("TEST u dergua ne matrice");
-delay(1000);
-display.showText("1234");
+  Serial.println("Display OK");
 
+  display.showText("TEST", PA_PRINT, PA_NO_EFFECT);
+
+  delay(3000);
+
+
+  // ================= RTC =================
 
   rtc.init();
 
-  // 2. Lidhja me Wi-Fi
+
+  // ================= WIFI =================
+
   Serial.println("Before WiFi");
 
-Serial.println("Lidhja me Wi-Fi...");
-WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.println("Lidhja me Wi-Fi...");
+
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
   int attempts = 0;
+
   while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+
     delay(500);
     Serial.print(".");
     attempts++;
+
   }
+
+
   Serial.println();
+
   Serial.println("WiFi process finished");
-  
+
+
   if (WiFi.status() == WL_CONNECTED) {
+
     Serial.println("✅ WiFi OK!");
     Serial.print("IP: ");
     Serial.println(WiFi.localIP());
+
     display.showText("WiFi OK");
+
     delay(1000);
-  } else {
-    Serial.println("⚠️ WiFi dështoi! Ora do të vazhdojë me RTC.");
+
+  }
+  else {
+
+    Serial.println("⚠️ WiFi deshtoi!");
+
     display.showText("No WiFi");
+
     delay(1000);
+
   }
 
-  // 3. Sinkronizimi i RTC me NTP
+
+
+  // ================= NTP =================
+
   if (WiFi.status() == WL_CONNECTED) {
-    configTime(GMT_OFFSET_SEC, DAYLIGHT_OFFSET_SEC, NTP_SERVER);
+
+    configTime(
+      GMT_OFFSET_SEC,
+      DAYLIGHT_OFFSET_SEC,
+      NTP_SERVER
+    );
+
+
     Serial.println("Duke pritur NTP...");
+
+
     time_t now = time(nullptr);
+
+
     while (now < 8 * 3600 * 2 && millis() < 10000) {
+
       delay(500);
       Serial.print(".");
+
       now = time(nullptr);
+
     }
+
+
     Serial.println();
-    rtc.syncFromNTP(now);  // <--- Përdor objektin rtc të klasës RTC
+
+
+    rtc.syncFromNTP(now);
+
     Serial.println("✅ RTC u sinkronizua me NTP!");
+
   }
 
-  // 4. Inicializimi i Sensorëve
+
+
+  // ================= SENSORS =================
+
   Serial.println("Before Sensors");
 
-sensors.init();
+  sensors.init();
 
-Serial.println("Sensors OK");
+  Serial.println("Sensors OK");
 
-  // 5. Inicializimi i PIR
-  pinMode(PIR_PIN, INPUT);
+
+
+  // ================= PIR =================
+
   Serial.println("Before PIR");
 
-pinMode(PIR_PIN, INPUT);
+  pinMode(PIR_PIN, INPUT);
 
-Serial.println("PIR OK");
+  Serial.println("PIR OK");
+
 
   display.showText("Ready!");
+
   delay(1000);
+
   display.clear();
+
 }
+
+
 
 void loop() {
-  // 1. Rilidhja Wi-Fi
-  if (WiFi.status() != WL_CONNECTED && millis() - lastRTCSync > 60000) {
-    Serial.println("⚠️ WiFi u shkëput! Rilidhja...");
+
+
+  // WiFi reconnect
+
+  if (WiFi.status() != WL_CONNECTED &&
+      millis() - lastRTCSync > 60000) {
+
+    Serial.println("WiFi u shkëput!");
+
     WiFi.reconnect();
+
     lastRTCSync = millis();
+
   }
 
-  // 2. Leximi i sensorëve çdo 3 sekonda
+
+
+  // Lexo sensorët
+
   if (millis() - lastSensorRead > 3000) {
+
     sensors.readAll();
+
     lastSensorRead = millis();
+
   }
 
-  // 3. Përditësimi i ekranit
-  if (millis() - lastDisplayUpdate > 500 && displayOn) {
+
+
+  // Përditëso ekranin
+
+  if (millis() - lastDisplayUpdate > 5000 &&
+      displayOn) {
+
     updateDisplay();
+
     lastDisplayUpdate = millis();
+
   }
 
-  // 4. Kontrolli i PIR
+
+
+  // PIR
+
   if (millis() - lastPIRCheck > 2000) {
+
     checkPIR();
+
     lastPIRCheck = millis();
+
   }
 
-  // 5. Sinkronizimi i RTC me NTP çdo orë
-  if (millis() - lastRTCSync > 3600000 && WiFi.status() == WL_CONNECTED) {
+
+
+  // RTC çdo orë
+
+  if (millis() - lastRTCSync > 3600000 &&
+      WiFi.status() == WL_CONNECTED) {
+
+
     time_t now = time(nullptr);
-    rtc.syncFromNTP(now);  // <--- Përdor objektin rtc të klasës RTC
+
+    rtc.syncFromNTP(now);
+
     lastRTCSync = millis();
-    Serial.println("✅ RTC u sinkronizua me NTP (periodik)!");
+
+
+    Serial.println("RTC u sinkronizua!");
+
   }
+
+
+
+  // Shumë e rëndësishme për MD_Parola
+
   display.animate();
 
+
+
   delay(10);
+
 }
 
 
-// ==================== FUNKSIONET ====================
+
+
+
+// ================= DISPLAY =================
+
 
 void updateDisplay() {
-  String timeStr = rtc.getTimeString();  // <--- Përdor objektin rtc
+
+
   float temp = sensors.getTemperature();
+
   float press = sensors.getPressure();
 
-  String line1 = timeStr;
-  String line2 = String(temp, 1) + "C";
-  String line3 = String(press, 0) + "hPa";
-  
-  display.showText(line1);
-  delay(1500);
-  display.showText(line2);
-  delay(1500);
-  display.showText(line3);
-  delay(1500);
+
+  String text =
+    String(temp,1) +
+    "C  " +
+    String(press,0) +
+    "hPa";
+
+
+  Serial.print("Display: ");
+  Serial.println(text);
+
+
+
+  display.showScrollingText(
+    text,
+    60,
+    1000
+  );
+
 }
+
+
+
+
+
+// ================= PIR =================
+
 
 void checkPIR() {
+
+
   int pirValue = digitalRead(PIR_PIN);
-  
+
+
   if (pirValue == HIGH && !pirState) {
+
+
     pirState = true;
-    Serial.println("🔴 Lëvizje e zbuluar!");
-    
-    if (!displayOn) {
-      displayOn = true;
-      display.setBrightness(8);
-      display.showText("Hello!");
-      delay(2000);
-    }
-    
-    int hour = rtc.getHour();  // <--- Përdor objektin rtc
+
+
+    Serial.println("🔴 Levizje!");
+
+
+
+    int hour = rtc.getHour();
+
+
     String greeting = getGreeting(hour);
+
+
     display.showText(greeting);
-    delay(2000);
-    
-  } else if (pirValue == LOW && pirState) {
-    pirState = false;
-    Serial.println("⚪ Lëvizja u ndal.");
-    displayOn = false;
-    display.clear();
+
+
   }
+
+
+  else if (pirValue == LOW && pirState) {
+
+
+    pirState = false;
+
+
+    Serial.println("⚪ Pa levizje");
+
+
+  }
+
 }
 
+
+
+
 String getGreeting(int hour) {
-  if (hour >= 5 && hour < 12) return "Miremengjes!";
-  else if (hour >= 12 && hour < 18) return "Miredita!";
-  else if (hour >= 18 && hour < 22) return "Mirembrema!";
-  else return "Naten e mire!";
+
+
+  if (hour >= 5 && hour < 12)
+
+    return "Miremengjes";
+
+
+  else if (hour >= 12 && hour < 18)
+
+    return "Miredita";
+
+
+  else if (hour >= 18 && hour < 22)
+
+    return "Mirembrema";
+
+
+  else
+
+    return "Naten";
+
 }

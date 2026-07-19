@@ -30,7 +30,7 @@ void Display::init() {
   matrix->setIntensity(intensity);
 
   matrix->displayClear();
-  matrix->setIntensity(3);
+  
 
   matrix->setTextAlignment(PA_CENTER);
 
@@ -40,10 +40,12 @@ void Display::init() {
 // Pastrimi i ekranit
 void Display::clear() {
 
+  if (matrix == nullptr) {
+    init();
+  }
+
   if (matrix != nullptr) {
-
     matrix->displayClear();
-
   }
 
 }
@@ -56,11 +58,13 @@ void Display::showText(
   textEffect_t effectOut
 ) {
 
+  if (matrix == nullptr) {
+    init();
+  }
+
   if (matrix == nullptr)
     return;
 
-
-  char buffer[text.length() + 1];
 
   text.toCharArray(buffer, sizeof(buffer));
 
@@ -84,6 +88,10 @@ void Display::showScrollingText(
   uint16_t pause
 ) {
 
+  if (matrix == nullptr) {
+    init();
+  }
+
   if (matrix == nullptr)
     return;
 
@@ -91,8 +99,6 @@ void Display::showScrollingText(
   scrollSpeed = speed;
   pauseTime = pause;
 
-
-  char buffer[text.length() + 1];
 
   text.toCharArray(buffer, sizeof(buffer));
 
@@ -111,6 +117,10 @@ void Display::showScrollingText(
 
 // Ndrysho ndriçimin
 void Display::setBrightness(uint8_t level) {
+
+  if (matrix == nullptr) {
+    init();
+  }
 
   if (matrix == nullptr)
     return;
@@ -215,9 +225,15 @@ void Display::showClock(
 // Rifreskimi i animacionit
 void Display::animate() {
 
+  if (matrix == nullptr) {
+    init();
+  }
+
   if (matrix != nullptr) {
 
-    matrix->displayAnimate();
+    if (matrix->displayAnimate()) {
+      matrix->displayReset();
+    }
 
   }
 

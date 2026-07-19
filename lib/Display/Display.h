@@ -12,12 +12,15 @@ class Display {
 
 private:
 
+    private:
+
     MD_Parola* matrix;
 
     uint8_t intensity;
     uint16_t scrollSpeed;
     uint16_t pauseTime;
 
+    char buffer[100];
 
 public:
 
