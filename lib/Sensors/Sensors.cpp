@@ -1,56 +1,83 @@
 #include "Sensors.h"
-#include "config.h"  // <--- Sigurohu që ky rresht është i pranishëm
+#include "../../include/config.h"
+#include <Arduino.h>
 #include <Wire.h>
 
-Sensors::Sensors() {
-  temperature = 0.0;
-  pressure = 0.0;
-  lightLevel = 50;
-  lastRead = 0;
+Sensors::Sensors()
+{
+    temperature = 0;
+    pressure = 0;
 }
 
 void Sensors::init() {
-  // If custom SDA/SCL pins are defined in config.h, use them; otherwise use default Wire pins
-#if defined(MY_BMP280_SDA) && defined(MY_BMP280_SCL)
-  Wire.begin(MY_BMP280_SDA, MY_BMP280_SCL);
-#else
-  Wire.begin();
-#endif
-  
-  if (!bmp.begin(BMP280_ADDRESS)) {
-    Serial.println("⚠️ BMP280 nuk u gjet!");
-  } else {
-    bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,
-                    Adafruit_BMP280::SAMPLING_X2,
-                    Adafruit_BMP280::SAMPLING_X16,
-                    Adafruit_BMP280::FILTER_X16,
-                    Adafruit_BMP280::STANDBY_MS_500);
-    Serial.println("✅ BMP280 u inicializua!");
-  }
-  
-  readAll();
+
+    Serial.println("Inicializim I2C...");
+
+    Wire.begin(MY_BMP280_SDA, MY_BMP280_SCL);
+
+    Serial.println("Kontroll BMP280...");
+
+    if (!bmp.begin(0x77)) {
+    Serial.println("BMP280 nuk u gjet!");
+    return;
+            }
+    else {
+        Serial.println("BMP280 OK 0x77");
+
+        bmp.setSampling(
+            Adafruit_BMP280::MODE_NORMAL,
+            Adafruit_BMP280::SAMPLING_X2,
+            Adafruit_BMP280::SAMPLING_X16,
+            Adafruit_BMP280::FILTER_X16,
+            Adafruit_BMP280::STANDBY_MS_500
+        );
+    }
+
+
+    Serial.println("Scan I2C...");
+
+    for (byte i = 1; i < 127; i++) {
+
+        Wire.beginTransmission(i);
+
+        if (Wire.endTransmission() == 0) {
+
+            Serial.print("Pajisje I2C gjetur: 0x");
+            Serial.println(i, HEX);
+
+        }
+    }
+
+    Serial.println("Sensors OK");
 }
+
 
 void Sensors::readAll() {
-  temperature = bmp.readTemperature();
-  pressure = bmp.readPressure() / 100.0F;
-  
-  Serial.print("🌡️ Temp: ");
-  Serial.print(temperature);
-  Serial.print(" °C | ");
-  Serial.print("📊 Presioni: ");
-  Serial.print(pressure);
-  Serial.println(" hPa");
+
+    temperature = bmp.readTemperature();
+
+    pressure = bmp.readPressure() / 100.0F;
+
+
+    Serial.print("Temp: ");
+    Serial.print(temperature);
+
+    Serial.print(" C | Presioni: ");
+    Serial.print(pressure);
+
+    Serial.println(" hPa");
 }
+
 
 float Sensors::getTemperature() {
-  return temperature;
+
+    return temperature;
+
 }
+
 
 float Sensors::getPressure() {
-  return pressure;
-}
 
-int Sensors::getLightLevel() {
-  return lightLevel;  // Kthen vlerën fiktive
+    return pressure;
+
 }

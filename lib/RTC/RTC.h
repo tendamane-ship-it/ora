@@ -4,13 +4,13 @@
 #include <Arduino.h>
 #include <RTClib.h>
 
-class RTC {
+class OraRTC {
   private:
     bool rtcPresent;
-    RTC_DS3231 rtcModule;  // <--- Shto këtë si anëtar privat
-    
+    RTC_DS3231 rtcModule;
+
   public:
-    RTC();
+    OraRTC();
     void init();
     void syncFromNTP(time_t epochTime);
     String getTimeString();

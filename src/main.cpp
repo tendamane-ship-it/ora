@@ -9,7 +9,7 @@
 // Objektet globale
 Display display;
 Sensors sensors;
-RTC rtc;  // <--- Ktheje këtë rresht (objekti i klasës RTC)
+OraRTC rtc;
 
 // Variablat e kohës
 unsigned long lastSensorRead = 0;
@@ -28,15 +28,24 @@ void setup() {
   Serial.begin(115200);
   delay(2000);
   Serial.println("\n=== ORA SMART - ESP32-S3 ===\n");
+  Serial.println("START OK");
 
   // 1. Inicializimi i Ekranit
-  display.init();
-  display.showText("Smart Clock");
-  delay(2000);
+  Serial.println("Before Display");
+
+
+Serial.println("TEST u dergua ne matrice");
+delay(1000);
+display.showText("1234");
+
+
+  rtc.init();
 
   // 2. Lidhja me Wi-Fi
-  Serial.println("Lidhja me Wi-Fi...");
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.println("Before WiFi");
+
+Serial.println("Lidhja me Wi-Fi...");
+WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < 20) {
     delay(500);
@@ -44,6 +53,7 @@ void setup() {
     attempts++;
   }
   Serial.println();
+  Serial.println("WiFi process finished");
   
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("✅ WiFi OK!");
@@ -73,12 +83,19 @@ void setup() {
   }
 
   // 4. Inicializimi i Sensorëve
-  sensors.init();
-  Serial.println("✅ Sensorët u inicializuan!");
+  Serial.println("Before Sensors");
+
+sensors.init();
+
+Serial.println("Sensors OK");
 
   // 5. Inicializimi i PIR
   pinMode(PIR_PIN, INPUT);
-  Serial.println("✅ PIR u inicializua!");
+  Serial.println("Before PIR");
+
+pinMode(PIR_PIN, INPUT);
+
+Serial.println("PIR OK");
 
   display.showText("Ready!");
   delay(1000);
@@ -118,9 +135,11 @@ void loop() {
     lastRTCSync = millis();
     Serial.println("✅ RTC u sinkronizua me NTP (periodik)!");
   }
+  display.animate();
 
   delay(10);
 }
+
 
 // ==================== FUNKSIONET ====================
 

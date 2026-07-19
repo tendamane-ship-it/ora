@@ -1,12 +1,12 @@
 #include "RTC.h"
-#include "config.h"  // <--- Sigurohu që ky rresht është i pranishëm
+#include "config.h"
 #include <Wire.h>
 
-RTC::RTC() {
+OraRTC::OraRTC() {
   rtcPresent = false;
 }
 
-void RTC::init() {
+void OraRTC::init() {
   // Përdor emrat e rinj nga config.h nëse janë të përcaktuar,
   // përndryshe përdor pins standard të I2C.
 #if defined(MY_RTC_SDA) && defined(MY_RTC_SCL)
@@ -30,14 +30,14 @@ void RTC::init() {
   }
 }
 
-void RTC::syncFromNTP(time_t epochTime) {
+void OraRTC::syncFromNTP(time_t epochTime) {
   if (rtcPresent) {
     rtcModule.adjust(DateTime(epochTime));
     Serial.println("✅ RTC u përditësua!");
   }
 }
 
-String RTC::getTimeString() {
+String OraRTC::getTimeString() {
   if (rtcPresent) {
     DateTime now = rtcModule.now();
     char buffer[9];
@@ -47,7 +47,7 @@ String RTC::getTimeString() {
   return "--:--:--";
 }
 
-String RTC::getDateString() {
+String OraRTC::getDateString() {
   if (rtcPresent) {
     DateTime now = rtcModule.now();
     char buffer[11];
@@ -57,7 +57,7 @@ String RTC::getDateString() {
   return "--/--/----";
 }
 
-int RTC::getHour() {
+int OraRTC::getHour() {
   if (rtcPresent) {
     DateTime now = rtcModule.now();
     return now.hour();
@@ -65,7 +65,7 @@ int RTC::getHour() {
   return -1;
 }
 
-int RTC::getMinute() {
+int OraRTC::getMinute() {
   if (rtcPresent) {
     DateTime now = rtcModule.now();
     return now.minute();
@@ -73,7 +73,7 @@ int RTC::getMinute() {
   return -1;
 }
 
-int RTC::getSecond() {
+int OraRTC::getSecond() {
   if (rtcPresent) {
     DateTime now = rtcModule.now();
     return now.second();
