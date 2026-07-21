@@ -24,6 +24,7 @@ unsigned long lastPIRCheck = 0;
 // Gjendje
 bool pirState = false;
 bool displayOn = true;
+bool ntpOK = false;
 unsigned long lastPageChange = 0;
 uint8_t displayPage = 0;
 
@@ -41,6 +42,24 @@ void setup() {
 
   Serial.println("\n=== ORA SMART - ESP32-S3 ===\n");
   Serial.println("START OK");
+  Serial.println("=== TIME TEST ===");
+
+time_t nowTest = time(nullptr);
+
+Serial.print("RAW: ");
+Serial.println(ctime(&nowTest));
+
+struct tm testTime;
+
+if (getLocalTime(&testTime)) {
+  Serial.printf("LOCAL: %02d:%02d:%02d\n",
+                testTime.tm_hour,
+                testTime.tm_min,
+                testTime.tm_sec);
+}
+else {
+  Serial.println("LOCAL TIME FAILED");
+}
 
 
   // ================= DISPLAY =================
@@ -108,48 +127,50 @@ void setup() {
 
 
 
-  // ================= NTP =================
+ // ================= NTP =================
 
-  if (WiFi.status() == WL_CONNECTED) {
+if (WiFi.status() == WL_CONNECTED) {
 
-    configTime(
-      GMT_OFFSET_SEC,
-      DAYLIGHT_OFFSET_SEC,
-      NTP_SERVER
-    );
-   
+  configTime(7200, 0, NTP_SERVER);
 
-    Serial.println("Duke pritur NTP...");
+  Serial.println("Duke pritur NTP...");
+
+  struct tm timeinfo;
+
+  int retry = 0;
+
+  while (!getLocalTime(&timeinfo) && retry < 20) {
+
+    delay(500);
+    Serial.print(".");
+    retry++;
+
+  }
+
+  Serial.println();
+
+  if (getLocalTime(&timeinfo)) {
+
+    Serial.printf("LOCAL TIME: %02d:%02d:%02d\n",
+                  timeinfo.tm_hour,
+                  timeinfo.tm_min,
+                  timeinfo.tm_sec);
 
 
     time_t now = time(nullptr);
 
+    rtc.syncFromNTP(now);
 
-    while (now < 8 * 3600 * 2 && millis() < 10000) {
+    Serial.println("✅ RTC u sinkronizua!");
 
-      delay(500);
-      Serial.print(".");
+  }
+  else {
 
-      now = time(nullptr);
-
-    }
-
-
-    Serial.println();
-
-rtc.syncFromNTP(now);
-
-Serial.println("✅ RTC u sinkronizua me NTP!");
-
-Serial.print("Koha NTP: ");
-Serial.println(ctime(&now));
-
-Serial.print("Koha RTC: ");
-Serial.println(rtc.getTimeString());
+    Serial.println("⚠️ NTP deshtoi!");
 
   }
 
-
+}
 
   // ================= SENSORS =================
 
@@ -241,9 +262,27 @@ void loop() {
       WiFi.status() == WL_CONNECTED) {
 
 
-    time_t now = time(nullptr);
+    struct tm timeinfo;
 
-    rtc.syncFromNTP(now);
+if (getLocalTime(&timeinfo)) {
+
+    time_t now = time(nullptr);
+    
+
+struct tm local;
+
+if (getLocalTime(&local)) {
+  Serial.printf("LOCAL: %02d:%02d:%02d\n",
+                local.tm_hour,
+                local.tm_min,
+                local.tm_sec);
+}
+
+rtc.syncFromNTP(now);
+
+lastRTCSync = millis();
+
+}
 
     lastRTCSync = millis();
 
@@ -279,8 +318,26 @@ void updateDisplay() {
   switch (displayPage) {
 
     case 0:
-      text = rtc.getTimeString();
-      break;
+{
+  struct tm timeinfo;
+
+  if (getLocalTime(&timeinfo)) {
+
+    char buffer[6];
+    sprintf(buffer, "%02d:%02d",
+            timeinfo.tm_hour,
+            timeinfo.tm_min);
+
+    text = String(buffer);
+
+  } else {
+
+    text = "--:--";
+
+  }
+
+  break;
+}
 
 
     case 1:
@@ -290,6 +347,10 @@ void updateDisplay() {
 
     case 2:
       text = String(sensors.getPressure(), 0) + "hPa";
+      break;
+
+    case 3:
+       text = String(sensors.getHumidity(), 0) + "%";
       break;
 
   }
@@ -308,7 +369,7 @@ void updateDisplay() {
 
   displayPage++;
 
-  if (displayPage > 2) {
+  if (displayPage > 3) {
     displayPage = 0;
   }
 

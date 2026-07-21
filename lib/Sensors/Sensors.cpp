@@ -7,8 +7,8 @@ Sensors::Sensors()
 {
     temperature = 0;
     pressure = 0;
+    humidity = 0;
 }
-
 void Sensors::init() {
 
     Serial.println("Inicializim I2C...");
@@ -23,7 +23,12 @@ void Sensors::init() {
             }
     else {
         Serial.println("BMP280 OK 0x77");
-
+    if (!aht.begin()) {
+    Serial.println("AHT20 nuk u gjet!");
+    }
+    else {
+    Serial.println("AHT20 OK");
+}
         bmp.setSampling(
             Adafruit_BMP280::MODE_NORMAL,
             Adafruit_BMP280::SAMPLING_X2,
@@ -50,8 +55,6 @@ void Sensors::init() {
 
     Serial.println("Sensors OK");
 }
-
-
 void Sensors::readAll() {
 
     temperature = bmp.readTemperature();
@@ -59,16 +62,24 @@ void Sensors::readAll() {
     pressure = bmp.readPressure() / 100.0F;
 
 
+    sensors_event_t humidityEvent, tempEvent;
+
+    aht.getEvent(&humidityEvent, &tempEvent);
+
+    humidity = humidityEvent.relative_humidity;
+
+
     Serial.print("Temp: ");
-    Serial.print(temperature);
+    Serial.print(temperature, 2);
 
     Serial.print(" C | Presioni: ");
-    Serial.print(pressure);
+    Serial.print(pressure, 2);
 
-    Serial.println(" hPa");
+    Serial.print(" hPa | Lageshtira: ");
+    Serial.print(humidity, 0);
+
+    Serial.println(" %");
 }
-
-
 float Sensors::getTemperature() {
 
     return temperature;
@@ -79,5 +90,12 @@ float Sensors::getTemperature() {
 float Sensors::getPressure() {
 
     return pressure;
+
+}
+
+
+float Sensors::getHumidity() {
+
+    return humidity;
 
 }
