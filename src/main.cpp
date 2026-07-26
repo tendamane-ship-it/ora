@@ -2,16 +2,20 @@
 #include "config.h"
 #include <WiFi.h>
 #include <time.h>
-
 #include "Display.h"
 #include "Sensors.h"
 #include "RTC.h"
+#include "WebServerManager.h"
+
+
+
 
 
 // Objektet globale
 Display display;
 Sensors sensors;
 OraRTC rtc;
+WebServerManager webServer;
 
 
 // Kohëmatës
@@ -20,8 +24,15 @@ unsigned long lastDisplayUpdate = 0;
 unsigned long lastRTCSync = 0;
 unsigned long lastPIRCheck = 0;
 
+unsigned long lastSensorPage = 0;
+unsigned long sensorShowStart = 0;
 
-// Gjendje
+
+// ================= GJENDJET =================
+
+bool sensorMode = false;
+uint8_t sensorPage = 0;
+
 bool pirState = false;
 bool displayOn = true;
 bool ntpOK = false;
@@ -32,6 +43,7 @@ uint8_t displayPage = 0;
 void updateDisplay();
 void checkPIR();
 String getGreeting(int hour);
+void waitWithDisplay(unsigned long ms);
 
 
 
@@ -70,9 +82,9 @@ else {
 
   Serial.println("Display OK");
 
-  display.showText("TEST", PA_PRINT, PA_NO_EFFECT);
+  display.showText("Si je?", PA_PRINT, PA_NO_EFFECT);
 
-  delay(3000);
+  waitWithDisplay(3000);
 
 
   // ================= RTC =================
@@ -107,8 +119,10 @@ else {
   if (WiFi.status() == WL_CONNECTED) {
 
     Serial.println("✅ WiFi OK!");
+
     Serial.print("IP: ");
     Serial.println(WiFi.localIP());
+    
 
     display.showText("WiFi OK");
 
@@ -133,19 +147,21 @@ if (WiFi.status() == WL_CONNECTED) {
 
   configTime(7200, 0, NTP_SERVER);
 
-  Serial.println("Duke pritur NTP...");
+    Serial.println("Duke pritur NTP...");
+
 
   struct tm timeinfo;
 
   int retry = 0;
 
-  while (!getLocalTime(&timeinfo) && retry < 20) {
+    while (!getLocalTime(&timeinfo) && retry < 20) {
 
     delay(500);
     Serial.print(".");
     retry++;
 
-  }
+    }
+
 
   Serial.println();
 
@@ -179,6 +195,7 @@ if (WiFi.status() == WL_CONNECTED) {
   sensors.init();
 
   Serial.println("Sensors OK");
+
 
 
 
@@ -256,7 +273,8 @@ void loop() {
 
 
 
-  // RTC çdo orë
+
+  // ================= RTC SYNC =================
 
   if (millis() - lastRTCSync > 3600000 &&
       WiFi.status() == WL_CONNECTED) {
@@ -388,26 +406,25 @@ void checkPIR() {
   int pirValue = digitalRead(PIR_PIN);
 
 
-  if (pirValue == HIGH && !pirState) {
-
+ if (pirValue == HIGH && !pirState) {
 
     pirState = true;
 
-
     Serial.println("🔴 Levizje!");
 
+    if (millis() - lastGreetingTime > greetingCooldown) {
 
-
-    int hour = rtc.getHour();
-
+        int hour = rtc.getHour();
 
     String greeting = getGreeting(hour);
 
 
-    display.showText(greeting);
+
+        display.showText(greeting);
 
 
-  }
+
+}
 
 
   else if (pirValue == LOW && pirState) {
@@ -448,4 +465,16 @@ String getGreeting(int hour) {
 
     return "Naten";
 
+}
+// ================= DISPLAY WAIT =================
+
+void waitWithDisplay(unsigned long ms)
+{
+  unsigned long start = millis();
+
+  while (millis() - start < ms)
+  {
+    display.animate();
+    delay(10);
+  }
 }

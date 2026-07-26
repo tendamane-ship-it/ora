@@ -3,11 +3,25 @@
 
 #include <Arduino.h>
 #include <Wire.h>
+
 #include <Adafruit_BMP280.h>
 #include <Adafruit_AHTX0.h>
+#include <BH1750.h>
 
 
 class Sensors {
+
+private:
+
+    Adafruit_BMP280 bmp;
+    Adafruit_AHTX0 aht;
+    BH1750 lightMeter;
+
+    float temperature;
+    float pressure;
+    float humidity;
+    float lux;
+
 
 public:
 
@@ -16,20 +30,11 @@ public:
     void init();
     void readAll();
 
+
     float getTemperature();
     float getPressure();
     float getHumidity();
-
-
-private:
-
-    Adafruit_BMP280 bmp;
-    Adafruit_AHTX0 aht;
-
-    float temperature;
-    float pressure;
-    float humidity;
-
+    float getLux();
 
 };
 
