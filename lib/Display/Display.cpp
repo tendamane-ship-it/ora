@@ -207,18 +207,23 @@ void Display::showTemperature(
 
 
 // Ora
-void Display::showClock(
-  String time
-) {
+void Display::showClock(String time) {
 
-  showText(
-    time,
+  if (matrix == nullptr)
+    return;
+
+  time.toCharArray(buffer, sizeof(buffer));
+
+  matrix->displayText(
+    buffer,
+    PA_CENTER,
+    0,
+    0,
     PA_PRINT,
     PA_NO_EFFECT
   );
 
 }
-
 
 // Rifreskimi i animacionit
 void Display::animate() {

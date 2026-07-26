@@ -12,7 +12,6 @@ class Display {
 
 private:
 
-    private:
 
     MD_Parola* matrix;
 

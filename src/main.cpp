@@ -8,58 +8,52 @@
 #include "RTC.h"
 
 
-// Objektet globale
+// ================= OBJEKTET =================
+
 Display display;
 Sensors sensors;
 OraRTC rtc;
 
 
-// Kohëmatës
+// ================= TIMERAT =================
+
 unsigned long lastSensorRead = 0;
-unsigned long lastDisplayUpdate = 0;
+unsigned long lastClockUpdate = 0;
 unsigned long lastRTCSync = 0;
 unsigned long lastPIRCheck = 0;
 
+unsigned long lastSensorPage = 0;
+unsigned long sensorShowStart = 0;
 
-// Gjendje
+
+// ================= GJENDJET =================
+
+bool sensorMode = false;
+uint8_t sensorPage = 0;
+
 bool pirState = false;
 bool displayOn = true;
-bool ntpOK = false;
-unsigned long lastPageChange = 0;
-uint8_t displayPage = 0;
 
-// Prototipe
+bool ntpOK = false;
+
+
+// ================= PROTOTIPET =================
+
 void updateDisplay();
 void checkPIR();
 String getGreeting(int hour);
 
 
 
+// ================= SETUP =================
+
 void setup() {
 
   Serial.begin(115200);
   delay(2000);
 
-  Serial.println("\n=== ORA SMART - ESP32-S3 ===\n");
-  Serial.println("START OK");
-  Serial.println("=== TIME TEST ===");
+  Serial.println("\n=== ORA SMART - ESP32-S3 ===");
 
-time_t nowTest = time(nullptr);
-
-Serial.print("RAW: ");
-Serial.println(ctime(&nowTest));
-
-struct tm testTime;
-
-if (getLocalTime(&testTime)) {
-  Serial.printf("LOCAL: %02d:%02d:%02d\n",
-                testTime.tm_hour,
-                testTime.tm_min,
-                testTime.tm_sec);
-}
-else {
-  Serial.println("LOCAL TIME FAILED");
-}
 
 
   // ================= DISPLAY =================
@@ -75,18 +69,20 @@ else {
   delay(3000);
 
 
+
   // ================= RTC =================
 
   rtc.init();
 
 
+
   // ================= WIFI =================
 
   Serial.println("Before WiFi");
-
   Serial.println("Lidhja me Wi-Fi...");
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
 
   int attempts = 0;
 
@@ -101,84 +97,86 @@ else {
 
   Serial.println();
 
-  Serial.println("WiFi process finished");
-
 
   if (WiFi.status() == WL_CONNECTED) {
 
     Serial.println("✅ WiFi OK!");
+
     Serial.print("IP: ");
     Serial.println(WiFi.localIP());
-
-    display.showText("WiFi OK");
-
-    delay(1000);
 
   }
   else {
 
     Serial.println("⚠️ WiFi deshtoi!");
 
-    display.showText("No WiFi");
+  }
 
-    delay(1000);
+
+
+  // ================= NTP =================
+
+  if (WiFi.status() == WL_CONNECTED) {
+
+    delay(3000);
+
+    configTime(7200, 0, NTP_SERVER);
+
+
+    Serial.println("Duke pritur NTP...");
+
+
+    struct tm timeinfo;
+
+    int retry = 0;
+
+
+    while (!getLocalTime(&timeinfo) && retry < 20) {
+
+      delay(500);
+      Serial.print(".");
+      retry++;
+
+    }
+
+
+    Serial.println();
+
+
+    if (getLocalTime(&timeinfo)) {
+
+
+      Serial.printf("LOCAL TIME: %02d:%02d:%02d\n",
+                    timeinfo.tm_hour,
+                    timeinfo.tm_min,
+                    timeinfo.tm_sec);
+
+
+      time_t now = time(nullptr);
+
+      rtc.syncFromNTP(now);
+
+
+      ntpOK = true;
+
+
+      Serial.println("✅ RTC u sinkronizua!");
+
+    }
 
   }
 
 
 
- // ================= NTP =================
 
-if (WiFi.status() == WL_CONNECTED) {
-
-  configTime(7200, 0, NTP_SERVER);
-
-  Serial.println("Duke pritur NTP...");
-
-  struct tm timeinfo;
-
-  int retry = 0;
-
-  while (!getLocalTime(&timeinfo) && retry < 20) {
-
-    delay(500);
-    Serial.print(".");
-    retry++;
-
-  }
-
-  Serial.println();
-
-  if (getLocalTime(&timeinfo)) {
-
-    Serial.printf("LOCAL TIME: %02d:%02d:%02d\n",
-                  timeinfo.tm_hour,
-                  timeinfo.tm_min,
-                  timeinfo.tm_sec);
-
-
-    time_t now = time(nullptr);
-
-    rtc.syncFromNTP(now);
-
-    Serial.println("✅ RTC u sinkronizua!");
-
-  }
-  else {
-
-    Serial.println("⚠️ NTP deshtoi!");
-
-  }
-
-}
-
-  // ================= SENSORS =================
+  // ================= SENSORËT =================
 
   Serial.println("Before Sensors");
 
   sensors.init();
 
   Serial.println("Sensors OK");
+
 
 
 
@@ -191,6 +189,7 @@ if (WiFi.status() == WL_CONNECTED) {
   Serial.println("PIR OK");
 
 
+
   display.showText("Ready!");
 
   delay(1000);
@@ -201,25 +200,13 @@ if (WiFi.status() == WL_CONNECTED) {
 
 
 
+
+// ================= LOOP =================
+
 void loop() {
 
 
-  // WiFi reconnect
-
-  if (WiFi.status() != WL_CONNECTED &&
-      millis() - lastRTCSync > 60000) {
-
-    Serial.println("WiFi u shkëput!");
-
-    WiFi.reconnect();
-
-    lastRTCSync = millis();
-
-  }
-
-
-
-  // Lexo sensorët
+  // ================= SENSOR READ =================
 
   if (millis() - lastSensorRead > 3000) {
 
@@ -231,20 +218,99 @@ void loop() {
 
 
 
-  // Përditëso ekranin
+  // ================= WIFI RECONNECT =================
 
-  if (millis() - lastDisplayUpdate > 5000 &&
-      displayOn) {
+  if (WiFi.status() != WL_CONNECTED &&
+      millis() - lastRTCSync > 60000) {
 
-    updateDisplay();
 
-    lastDisplayUpdate = millis();
+    Serial.println("WiFi u shkëput!");
+
+    WiFi.reconnect();
+
+    lastRTCSync = millis();
 
   }
 
 
 
-  // PIR
+
+  // ================= ORA =================
+
+ // Ora përditësohet çdo sekondë vetëm kur nuk jemi në sensorë
+// Ora përditësohet çdo sekondë vetëm kur nuk jemi në sensorë
+
+if (!sensorMode && millis() - lastClockUpdate > 1000) {
+
+    updateDisplay();
+
+    lastClockUpdate = millis();
+
+}
+
+
+
+  // ================= FILLO SENSORËT =================
+
+  if (!sensorMode &&
+      millis() - lastSensorPage > 30000) {
+
+
+    sensorMode = true;
+
+    sensorPage = 1;
+
+    sensorShowStart = millis();
+
+
+    Serial.println("SENSOR PAGE = 1");
+
+    updateDisplay();
+
+  }
+
+
+
+
+  // ================= NDRYSHO SENSOR PAGE =================
+
+  if (sensorMode &&
+      millis() - sensorShowStart > 5000) {
+
+
+    sensorPage++;
+
+
+    if (sensorPage > 3) {
+
+
+      sensorMode = false;
+
+      sensorPage = 0;
+
+      lastSensorPage = millis();
+
+
+    }
+    else {
+
+
+      sensorShowStart = millis();
+
+      Serial.print("SENSOR PAGE = ");
+      Serial.println(sensorPage);
+
+
+      updateDisplay();
+
+    }
+
+  }
+
+
+
+
+  // ================= PIR =================
 
   if (millis() - lastPIRCheck > 2000) {
 
@@ -256,7 +322,8 @@ void loop() {
 
 
 
-  // RTC çdo orë
+
+  // ================= RTC SYNC =================
 
   if (millis() - lastRTCSync > 3600000 &&
       WiFi.status() == WL_CONNECTED) {
@@ -264,114 +331,142 @@ void loop() {
 
     struct tm timeinfo;
 
-if (getLocalTime(&timeinfo)) {
 
-    time_t now = time(nullptr);
-    
+    if (getLocalTime(&timeinfo)) {
 
-struct tm local;
 
-if (getLocalTime(&local)) {
-  Serial.printf("LOCAL: %02d:%02d:%02d\n",
-                local.tm_hour,
-                local.tm_min,
-                local.tm_sec);
-}
+      time_t now = time(nullptr);
 
-rtc.syncFromNTP(now);
+      rtc.syncFromNTP(now);
 
-lastRTCSync = millis();
 
-}
+      Serial.println("RTC u sinkronizua!");
+
+    }
+
 
     lastRTCSync = millis();
-
-
-    Serial.println("RTC u sinkronizua!");
 
   }
 
 
 
-  // Shumë e rëndësishme për MD_Parola
+
+  // ================= MD_PAROLA =================
 
   display.animate();
-
 
 
   delay(10);
 
 }
-
-
-
-
-
 // ================= DISPLAY =================
 
-
 void updateDisplay() {
+
 
   String text;
 
 
-  switch (displayPage) {
+  if (sensorMode) {
 
-    case 0:
-{
-  struct tm timeinfo;
 
-  if (getLocalTime(&timeinfo)) {
+    switch(sensorPage) {
 
-    char buffer[6];
+
+      case 1:
+
+        text = String(sensors.getTemperature(), 1) + "C";
+
+        break;
+
+
+
+      case 2:
+
+        text = String(sensors.getPressure(), 0) + "hPa";
+
+        break;
+
+
+
+      case 3:
+
+        text = String(sensors.getHumidity(), 0) + "%";
+
+        break;
+
+
+
+      default:
+
+        text = "";
+
+        break;
+
+    }
+
+
+  }
+  else {
+
+
+    struct tm timeinfo;
+
+
+    if (getLocalTime(&timeinfo)) {
+
+
+      char buffer[6];
+
+
+      if (timeinfo.tm_sec % 2 == 0) {
+
     sprintf(buffer, "%02d:%02d",
             timeinfo.tm_hour,
             timeinfo.tm_min);
 
-    text = String(buffer);
+}
+else {
 
-  } else {
+    sprintf(buffer, "%02d %02d",
+            timeinfo.tm_hour,
+            timeinfo.tm_min);
 
-    text = "--:--";
-
-  }
-
-  break;
 }
 
-
-    case 1:
-      text = String(sensors.getTemperature(), 1) + "C";
-      break;
+      text = String(buffer);
 
 
-    case 2:
-      text = String(sensors.getPressure(), 0) + "hPa";
-      break;
+    }
+    else {
 
-    case 3:
-       text = String(sensors.getHumidity(), 0) + "%";
-      break;
+
+      text = "--:--";
+
+
+    }
+
 
   }
+
 
 
   Serial.print("Display: ");
+
   Serial.println(text);
 
 
-  display.showScrollingText(
-    text,
-    60,
-    1000
-  );
 
+  if(sensorMode)
+{
+    display.showText(text);
+}
+else
+{
+    display.showClock(text);
+}
 
-  displayPage++;
-
-  if (displayPage > 3) {
-    displayPage = 0;
-  }
 
 }
 
@@ -386,6 +481,7 @@ void checkPIR() {
 
 
   int pirValue = digitalRead(PIR_PIN);
+
 
 
   if (pirValue == HIGH && !pirState) {
@@ -404,10 +500,13 @@ void checkPIR() {
     String greeting = getGreeting(hour);
 
 
+
     display.showText(greeting);
 
 
+
   }
+
 
 
   else if (pirValue == LOW && pirState) {
@@ -421,12 +520,17 @@ void checkPIR() {
 
   }
 
+
 }
 
 
 
 
+// ================= PERSHENDETJA =================
+
+
 String getGreeting(int hour) {
+
 
 
   if (hour >= 5 && hour < 12)
@@ -434,9 +538,11 @@ String getGreeting(int hour) {
     return "Miremengjes";
 
 
+
   else if (hour >= 12 && hour < 18)
 
     return "Miredita";
+
 
 
   else if (hour >= 18 && hour < 22)
@@ -444,8 +550,10 @@ String getGreeting(int hour) {
     return "Mirembrema";
 
 
+
   else
 
     return "Naten";
+
 
 }
