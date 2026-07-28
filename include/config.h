@@ -1,9 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-// ==================== Wi-Fi ====================
-const char* WIFI_SSID = "Mane";
-const char* WIFI_PASSWORD = "77777778";
+
 
 // ==================== MAX7219 - 8x32 Matrix ====================
 #define MAX_DIN  7
@@ -14,7 +12,7 @@ const char* WIFI_PASSWORD = "77777778";
 // ==================== BMP280 (I2C) ====================
 #define MY_BMP280_SDA 8
 #define MY_BMP280_SCL 9
-#define BMP280_ADDRESS 0x76
+#define BMP280_I2C_ADDRESS 0x77
 
 // ==================== DS3231 RTC (I2C) ====================
 #define MY_RTC_SDA 8   // <--- Emër unik
@@ -27,8 +25,11 @@ const char* WIFI_PASSWORD = "77777778";
 #define PIR_PIN 5
 
 // ==================== NTP ====================
-const char* NTP_SERVER = "pool.ntp.org";
-const long GMT_OFFSET_SEC = 7200;
-const int DAYLIGHT_OFFSET_SEC = 3600;
+extern const char* WIFI_SSID;
+extern const char* WIFI_PASSWORD;
+extern const char* NTP_SERVER;
+
+extern const int GMT_OFFSET_SEC;
+extern const int DAYLIGHT_OFFSET_SEC;
 
 #endif

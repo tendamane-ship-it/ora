@@ -12,66 +12,81 @@ server(80)
 
 void WebServerManager::begin(Sensors* s, OraRTC* r)
 {
-
     sensors = s;
     rtc = r;
 
+    server.on("/", [this]() {
 
-    server.on("/", [this](){
+        String html;
 
-    String page;
+        html += "<html>";
+        html += "<head>";
+        html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+        html += "<title>Ora Smart</title>";
+        html += "</head>";
 
-    page += "<html>";
-    page += "<head>";
-    page += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
-    page += "<title>Ora Smart</title>";
-    page += "</head>";
+        html += "<body>";
 
-    page += "<body>";
+        html += "<h1>ORA SMART ESP32-S3</h1>";
 
-    page += "<h1>ORA SMART ESP32-S3</h1>";
+        html += "<hr>";
 
-    page += "<hr>";
+        html += "<h2>Sistemi OK</h2>";
 
-    page += "<h2>Sistemi OK</h2>";
+        html += "<p>WiFi: Connected</p>";
 
-    page += "<p>WiFi: Connected</p>";
-    page += "<p>IP: ";
-    page += WiFi.localIP().toString();
-    page += "</p>";
+        html += "<p>IP: ";
+        html += WiFi.localIP().toString();
+        html += "</p>";
 
-    page += "<p>Temperatura: ";
-    page += String(sensors->getTemperature(),1);
-    page += " C</p>";
+        html += "<p>Temperatura: ";
+        html += String(sensors->getTemperature(),1);
+        html += " C</p>";
 
-    page += "<p>Presioni: ";
-    page += String(sensors->getPressure(),0);
-    page += " hPa</p>";
+        html += "<p>Presioni: ";
+        html += String(sensors->getPressure(),0);
+        html += " hPa</p>";
 
-    page += "<p>Lageshtira: ";
-    page += String(sensors->getHumidity(),0);
-    page += " %</p>";
-    page += "<p>Ndricimi: ";
-page += String(sensors->getLux(),0);
-page += " lux</p>";
+        html += "<p>Lageshtira: ";
+        html += String(sensors->getHumidity(),0);
+        html += " %</p>";
 
-    page += "</body></html>";
+        html += "<p>Ndricimi: ";
+        html += String(sensors->getLux(),0);
+        html += " lux</p>";
 
+        html += "<hr>";
 
-    server.send(
-        200,
-        "text/html",
-        page
-    );
+        html += "<p><b>RSSI:</b> ";
+        html += String(WiFi.RSSI());
+        html += " dBm</p>";
 
-});
+        html += "<p><b>Uptime:</b> ";
+        html += String(millis() / 1000);
+        html += " sec</p>";
+
+        html += "<p><b>CPU:</b> ";
+        html += String(getCpuFrequencyMhz());
+        html += " MHz</p>";
+
+        html += "<p><b>Heap Free:</b> ";
+        html += String(ESP.getFreeHeap());
+        html += " bytes</p>";
+
+        html += "</body></html>";
+
+        server.send(200, "text/html", html);
+
+    });
 
 
     server.begin();
 
     Serial.println("WebServer OK");
-
 }
+   
+
+
 
 
 

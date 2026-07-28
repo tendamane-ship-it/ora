@@ -7,12 +7,16 @@
 #include "Sensors.h"
 #include "RTC.h"
 #include "WiFiService.h"
+#include "WebServerManager.h"
 
 
 // Objektet globale
 Display display;
 Sensors sensors;
-RTC rtc;  // <--- Ktheje këtë rresht (objekti i klasës RTC)
+WebServerManager webServer;
+OraRTC rtc;  // <--- Ktheje këtë rresht (objekti i klasës RTC)
+unsigned long lastPageChange = 0;
+int displayPage = 0;
 
 // Variablat e kohës
 unsigned long lastSensorRead = 0;
@@ -26,20 +30,40 @@ bool displayOn = true;
 void updateDisplay();
 void checkPIR();
 String getGreeting(int hour);
+void showStartup(String txt, int ms);
+
+void showStartup(String txt, int ms)
+{
+  display.showText(txt);
+
+  unsigned long start = millis();
+
+  while(millis() - start < ms)
+  {
+    display.animate();
+    delay(10);
+  }
+}
 
 void setup() {
   Serial.begin(115200);
   delay(2000);
+
   Serial.println("\n=== ORA SMART - ESP32-S3 ===\n");
+
   initWiFiManager();
 
-  // 1. Inicializimi i Ekranit
+  // Inicializimi i ekranit vetëm një herë
   display.init();
-  display.showText("Smart Clock");
-  delay(2000);
+
+  
+
+  
+
 
   // 2. Lidhja me Wi-Fi
   Serial.println("Lidhja me Wi-Fi...");
+  display.showText("WiFi...");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < 20) {
@@ -55,6 +79,7 @@ void setup() {
     Serial.println(WiFi.localIP());
     display.showText("WiFi OK");
     delay(1000);
+    
   } else {
     Serial.println("⚠️ WiFi dështoi! Ora do të vazhdojë me RTC.");
     display.showText("No WiFi");
@@ -65,6 +90,7 @@ void setup() {
   if (WiFi.status() == WL_CONNECTED) {
     configTime(GMT_OFFSET_SEC, DAYLIGHT_OFFSET_SEC, NTP_SERVER);
     Serial.println("Duke pritur NTP...");
+    display.showText("NTP...");
     time_t now = time(nullptr);
     while (now < 8 * 3600 * 2 && millis() < 10000) {
       delay(500);
@@ -74,6 +100,8 @@ void setup() {
     Serial.println();
     rtc.syncFromNTP(now);  // <--- Përdor objektin rtc të klasës RTC
     Serial.println("✅ RTC u sinkronizua me NTP!");
+    display.showText("Gati!");
+delay(1000);
   }
 
   // 4. Inicializimi i Sensorëve
@@ -83,14 +111,23 @@ void setup() {
   // 5. Inicializimi i PIR
   pinMode(PIR_PIN, INPUT);
   Serial.println("✅ PIR u inicializua!");
+  // 6. Inicializimi i WebServer
+webServer.begin(&sensors, &rtc);
 
   display.showText("Ready!");
-  delay(1000);
-  display.clear();
+  delay(3000);
+  
 }
 
+
 void loop() {
+  
+
+  webServer.handle();
+  display.animate();
+
   // 1. Rilidhja Wi-Fi
+  
   if (WiFi.status() != WL_CONNECTED && millis() - lastRTCSync > 60000) {
     Serial.println("⚠️ WiFi u shkëput! Rilidhja...");
     WiFi.reconnect();
@@ -127,22 +164,48 @@ void loop() {
 }
 
 // ==================== FUNKSIONET ====================
-
 void updateDisplay() {
-  String timeStr = rtc.getTimeString();  // <--- Përdor objektin rtc
-  float temp = sensors.getTemperature();
-  float press = sensors.getPressure();
 
-  String line1 = timeStr;
-  String line2 = String(temp, 1) + "C";
-  String line3 = String(press, 0) + "hPa";
-  
-  display.showText(line1);
-  delay(1500);
-  display.showText(line2);
-  delay(1500);
-  display.showText(line3);
-  delay(1500);
+  unsigned long interval;
+
+if(displayPage == 0)
+    interval = 30000;   // ora 30 sekonda
+else
+    interval = 3000;    // sensorët 3 sekonda
+
+if(millis() - lastPageChange < interval)
+
+    return;
+
+  lastPageChange = millis();
+
+  switch(displayPage)
+  {
+    case 0:
+      display.showClock(rtc.getTimeString());
+      break;
+
+    case 1:
+      display.showTemperature(sensors.getTemperature());
+      break;
+
+    case 2:
+      display.showText(
+        String(sensors.getPressure(),0) + "hPa"
+      );
+      break;
+
+    case 3:
+      display.showText(
+        String(sensors.getHumidity(),0) + "%"
+      );
+      break;
+  }
+
+  displayPage++;
+
+  if(displayPage > 3)
+    displayPage = 0;
 }
 
 void checkPIR() {
