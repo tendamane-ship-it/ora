@@ -44,19 +44,7 @@ void Sensors::init() {
     }
 
 
-
-    if (!aht.begin()) {
-
-        Serial.println("AHT20 nuk u gjet!");
-
-    }
-    else {
-
-        Serial.println("AHT20 OK");
-
-    }
-
-
+Serial.println("AHT20 OFF TEST");
 
     if (lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE)) {
 
@@ -118,10 +106,7 @@ void Sensors::readAll() {
     sensors_event_t tempEvent;
 
 
-    aht.getEvent(&humidityEvent, &tempEvent);
-
-
-    humidity = humidityEvent.relative_humidity;
+    humidity = 0;
 
 
 
