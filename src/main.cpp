@@ -8,12 +8,14 @@
 #include "RTC.h"
 #include "WiFiService.h"
 #include "WebServerManager.h"
+#include "Settings.h"
 
 
 // Objektet globale
 Display display;
 Sensors sensors;
 WebServerManager webServer;
+Settings settings;
 OraRTC rtc;  // <--- Ktheje këtë rresht (objekti i klasës RTC)
 unsigned long lastPageChange = 0;
 int displayPage = 0;
@@ -56,9 +58,9 @@ void setup() {
   // Inicializimi i ekranit vetëm një herë
   display.init();
 
-  
+  display.setBrightness(settings.getBrightness());
 
-  
+settings.begin();  
 
 
   // 2. Lidhja me Wi-Fi
@@ -112,7 +114,7 @@ delay(1000);
   pinMode(PIR_PIN, INPUT);
   Serial.println("✅ PIR u inicializua!");
   // 6. Inicializimi i WebServer
-webServer.begin(&sensors, &rtc);
+webServer.begin(&sensors, &rtc, &settings);
 
   display.showText("Ready!");
   delay(3000);

@@ -6,8 +6,7 @@
 
 #include "Sensors.h"
 #include "RTC.h"
-
-
+#include "Settings.h"
 class WebServerManager {
 
 private:
@@ -16,13 +15,13 @@ private:
 
     Sensors* sensors = nullptr;
     OraRTC* rtc = nullptr;
-
+    Settings* settings = nullptr;
 
 public:
 
     WebServerManager();
 
-    void begin(Sensors* s, OraRTC* r);
+    void begin(Sensors* s, OraRTC* r, Settings* set);
 
     void handle();
 

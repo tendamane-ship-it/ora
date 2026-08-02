@@ -10,10 +10,12 @@ server(80)
 
 
 
-void WebServerManager::begin(Sensors* s, OraRTC* r)
+void WebServerManager::begin(Sensors* s, OraRTC* r, Settings* set)
 {
     sensors = s;
     rtc = r;
+    settings = set;
+
 
     server.on("/", [this]() {
 
@@ -72,13 +74,63 @@ void WebServerManager::begin(Sensors* s, OraRTC* r)
         html += "<p><b>Heap Free:</b> ";
         html += String(ESP.getFreeHeap());
         html += " bytes</p>";
+html += "<hr>";
 
+html += "<a href='/settings'>";
+html += "<button style='font-size:20px;padding:10px 20px'>";
+html += "Settings";
+html += "</button>";
+html += "</a>";
         html += "</body></html>";
 
         server.send(200, "text/html", html);
 
     });
+server.on("/settings", [this]() {
 
+    String html;
+
+    html += "<html>";
+    html += "<head>";
+    html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+    html += "<title>Settings</title>";
+    html += "</head>";
+
+    html += "<body>";
+
+    html += "<h1>ORA SETTINGS</h1>";
+
+    html += "<hr>";
+
+    html += "<p>Brightness: ";
+    html += String(settings->getBrightness());
+    html += "</p>";
+
+    html += "<p>Sensor interval: ";
+    html += String(settings->getSensorInterval());
+    html += " sec</p>";
+
+    html += "<p>PIR: ";
+    html += settings->isPirEnabled() ? "ON" : "OFF";
+    html += "</p>";
+
+    html += "<p>Weather: ";
+    html += settings->isWeatherEnabled() ? "ON" : "OFF";
+    html += "</p>";
+
+   html += "<hr>";
+
+html += "<a href='/'>";
+html += "<button style='font-size:20px;padding:10px 20px'>";
+html += "Kreu";
+html += "</button>";
+html += "</a>";
+
+    html += "</body></html>";
+
+    server.send(200, "text/html", html);
+
+});
 
     server.begin();
 

@@ -12,7 +12,7 @@ class Display {
 
 private:
 
-    private:
+    
 
     MD_Parola* matrix;
 
@@ -41,6 +41,7 @@ public:
         uint16_t speed,
         uint16_t pause
     );
+    
 
     void setBrightness(uint8_t level);
 
