@@ -7,8 +7,10 @@
 #include "Sensors.h"
 #include "RTC.h"
 #include "Settings.h"
-class WebServerManager {
+#include "ApiHandlers.h"
 
+class WebServerManager
+{
 private:
 
     WebServer server;
@@ -17,6 +19,8 @@ private:
     OraRTC* rtc = nullptr;
     Settings* settings = nullptr;
 
+    ApiHandlers api;
+
 public:
 
     WebServerManager();
@@ -24,8 +28,6 @@ public:
     void begin(Sensors* s, OraRTC* r, Settings* set);
 
     void handle();
-
 };
-
 
 #endif

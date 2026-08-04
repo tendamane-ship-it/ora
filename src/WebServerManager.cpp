@@ -15,6 +15,8 @@ void WebServerManager::begin(Sensors* s, OraRTC* r, Settings* set)
     sensors = s;
     rtc = r;
     settings = set;
+    api.begin(&server, sensors, rtc, settings);
+api.registerRoutes();
 
 
     server.on("/", [this]() {
@@ -81,6 +83,13 @@ html += "<button style='font-size:20px;padding:10px 20px'>";
 html += "Settings";
 html += "</button>";
 html += "</a>";
+html += "<br><br>";
+
+html += "<a href='/api'>";
+html += "<button style='font-size:20px;padding:10px 20px'>";
+html += "API Dashboard";
+html += "</button>";
+html += "</a>";
         html += "</body></html>";
 
         server.send(200, "text/html", html);
@@ -123,6 +132,13 @@ server.on("/settings", [this]() {
 html += "<a href='/'>";
 html += "<button style='font-size:20px;padding:10px 20px'>";
 html += "Kreu";
+html += "</button>";
+html += "</a>";
+html += "<br><br>";
+
+html += "<a href='/api'>";
+html += "<button style='font-size:20px;padding:10px 20px'>";
+html += "API Dashboard";
 html += "</button>";
 html += "</a>";
 

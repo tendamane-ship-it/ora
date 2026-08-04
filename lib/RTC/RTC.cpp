@@ -32,7 +32,11 @@ void OraRTC::init() {
 
 void OraRTC::syncFromNTP(time_t epochTime) {
   if (rtcPresent) {
+
+    epochTime += 7200;  // Shqipëri verë: UTC+2
+
     rtcModule.adjust(DateTime(epochTime));
+
     Serial.println("✅ RTC u përditësua!");
   }
 }
@@ -40,10 +44,16 @@ void OraRTC::syncFromNTP(time_t epochTime) {
 String OraRTC::getTimeString() {
   if (rtcPresent) {
     DateTime now = rtcModule.now();
+
     char buffer[9];
-    sprintf(buffer, "%02d:%02d", now.hour(), now.minute());
+    sprintf(buffer, "%02d:%02d:%02d",
+            now.hour(),
+            now.minute(),
+            now.second());
+
     return String(buffer);
   }
+
   return "--:--:--";
 }
 

@@ -90,21 +90,35 @@ settings.begin();
 
   // 3. Sinkronizimi i RTC me NTP
   if (WiFi.status() == WL_CONNECTED) {
-    configTime(GMT_OFFSET_SEC, DAYLIGHT_OFFSET_SEC, NTP_SERVER);
     Serial.println("Duke pritur NTP...");
-    display.showText("NTP...");
+  
+}
+
+// Inicializimi RTC
+rtc.init();
+
+// 3. Sinkronizimi i RTC me NTP
+if (WiFi.status() == WL_CONNECTED) {
+    setenv("TZ", "EET-2EEST,M3.5.0/3,M10.5.0/4", 1);
+tzset();
+
+configTime(0, 0, NTP_SERVER);
+
+    Serial.println("Duke pritur NTP...");
+    
     time_t now = time(nullptr);
+
     while (now < 8 * 3600 * 2 && millis() < 10000) {
-      delay(500);
-      Serial.print(".");
-      now = time(nullptr);
+        delay(500);
+        Serial.print(".");
+        now = time(nullptr);
     }
+
     Serial.println();
-    rtc.syncFromNTP(now);  // <--- Përdor objektin rtc të klasës RTC
+
+    rtc.syncFromNTP(now);
     Serial.println("✅ RTC u sinkronizua me NTP!");
-    display.showText("Gati!");
-delay(1000);
-  }
+}
 
   // 4. Inicializimi i Sensorëve
   sensors.init();
